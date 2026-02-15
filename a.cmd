@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableDelayedExpansion
 
 title HDN Neurohost Module - Clear Logs and Optimize System
 cls
@@ -199,11 +200,41 @@ del /s /f /q "%AppData%\Microsoft\Windows\PowerShell\*" >nul 2>&1
 
 echo PowerShell Logs Removed Successfully!
 
-:: Remove temp.cmd from C drive (sob jayga theke)
-for /f "delims=" %%a in ('where /r C:\ temp.cmd 2^>nul') do (
-    del /f /q "%%a" >nul 2>&1
-    echo Removed: %%a
+:: ================================
+:: Remove temp.cmd from C drive (robust logic)
+:: ================================
+echo Removing temp.cmd from C drive...
+set "temp_cmd_removed=0"
+
+:: 1) Known paths - check and delete (System32 needs takeown first)
+set "paths_to_check=C:\temp.cmd %SystemRoot%\temp.cmd %WinDir%\Temp\temp.cmd %TEMP%\temp.cmd %LocalAppData%\Temp\temp.cmd"
+for %%p in (%paths_to_check%) do (
+    if exist "%%~p" (
+        del /f /q "%%~p" >nul 2>&1
+        if not exist "%%~p" (echo   Removed: %%~p & set /a temp_cmd_removed+=1)
+    )
 )
+
+:: 2) System32 - take ownership then delete (admin required)
+if exist "%SystemRoot%\System32\temp.cmd" (
+    takeown /f "%SystemRoot%\System32\temp.cmd" >nul 2>&1
+    icacls "%SystemRoot%\System32\temp.cmd" /grant Administrators:F >nul 2>&1
+    del /f /q "%SystemRoot%\System32\temp.cmd" >nul 2>&1
+    if not exist "%SystemRoot%\System32\temp.cmd" (echo   Removed: %SystemRoot%\System32\temp.cmd & set /a temp_cmd_removed+=1)
+)
+
+:: 3) Search under C:\Windows only (faster than full C:) for any remaining temp.cmd
+for /r "%SystemRoot%" %%a in (temp.cmd) do (
+    if exist "%%a" (
+        takeown /f "%%a" >nul 2>&1
+        icacls "%%a" /grant Administrators:F >nul 2>&1
+        del /f /q "%%a" >nul 2>&1
+        if not exist "%%a" (echo   Removed: %%a & set /a temp_cmd_removed+=1)
+    )
+)
+
+if !temp_cmd_removed! gtr 0 (echo temp.cmd removal done.) else (echo No temp.cmd found on C drive.)
+echo.
 
 echo Done! HDN Neurohost has been successfully applied and logs cleared.
 pause
