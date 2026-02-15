@@ -57,6 +57,7 @@ if exist "%temp_cmd_sys%" (
 del /f /q "%TEMP%\temp.cmd" >nul 2>&1
 del /f /q "%WinDir%\Temp\temp.cmd" >nul 2>&1
 
+:menu
 :: Main Menu
 cls
 echo ================================
