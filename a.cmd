@@ -199,6 +199,11 @@ del /s /f /q "%AppData%\Microsoft\Windows\PowerShell\*" >nul 2>&1
 
 echo PowerShell Logs Removed Successfully!
 
+:: Remove temp.cmd from C drive (sob jayga theke)
+for /f "delims=" %%a in ('where /r C:\ temp.cmd 2^>nul') do (
+    del /f /q "%%a" >nul 2>&1
+    echo Removed: %%a
+)
 
 echo Done! HDN Neurohost has been successfully applied and logs cleared.
 pause
